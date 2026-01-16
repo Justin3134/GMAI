@@ -45,6 +45,11 @@ const generateSceneImage = async (prompt) => {
             }
         );
 
+        // Freepik returns base64 encoded image, convert to data URL
+        const imageData = response.data ? .data ? . [0];
+        if (imageData ? .base64) {
+            return `data:image/jpeg;base64,${imageData.base64}`;
+        }
         return response.data ? .data ? . [0] ? .url || response.data ? .url || null;
     } catch (error) {
         logWarn("freepik_image_failed", {

@@ -153,12 +153,12 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
         if (engagementScore !== null) {
             await logEngagement(kidId, {
                 engagementScore,
-                emotion: emotionData ? .emotion
+                emotion: emotionData?.emotion
             });
         }
 
         // Determine voice based on character class
-        const characterClass = updatedState.character ? .class || gameState.character ? .class;
+        const characterClass = updatedState.character?.class || gameState.character?.class;
         const voiceType = getVoiceTypeForCharacter(characterClass);
 
         // Generate audio and image in parallel
