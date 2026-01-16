@@ -44,7 +44,7 @@ export function StoryPanel() {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative flex-1 flex flex-col overflow-hidden"
+      className="relative flex-1 flex flex-col overflow-hidden rounded-2xl"
     >
       {/* Loading Overlay */}
       <AnimatePresence>
@@ -53,7 +53,7 @@ export function StoryPanel() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-background/90 backdrop-blur-sm z-20 flex items-center justify-center rounded-2xl"
+            className="absolute inset-0 bg-background/90 backdrop-blur-sm z-20 flex items-center justify-center"
           >
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -64,15 +64,13 @@ export function StoryPanel() {
       </AnimatePresence>
 
       {/* Location Badge - Floating */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-4 py-2 bg-background/90 backdrop-blur-md rounded-xl shadow-lg">
-        <span className="text-base">📍</span>
-        <span className="text-sm font-semibold text-foreground">
-          {gameState.location.emoji} {gameState.location.name}
-        </span>
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-background/90 backdrop-blur-md rounded-lg shadow-lg text-sm">
+        <span>{gameState.location.emoji}</span>
+        <span className="font-semibold text-foreground">{gameState.location.name}</span>
       </div>
       
       {/* Scene Image - Fullscreen */}
-      <div className="relative rounded-2xl overflow-hidden flex-1 w-full h-full">
+      <div className="relative flex-1 w-full h-full overflow-hidden">
         <motion.img
           key={displayImage}
           initial={{ opacity: 0, scale: 1.02 }}
@@ -82,15 +80,16 @@ export function StoryPanel() {
           alt="Adventure scene"
           className="w-full h-full object-cover"
           onError={(e) => {
-            // Fallback if Freepik image fails to load
             e.currentTarget.src = forestScene;
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent pointer-events-none" />
-        
-        {/* Story Text Overlay on Image */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-background/95 via-background/80 to-transparent">
-          <p className={`text-xl leading-relaxed text-foreground font-medium drop-shadow-lg ${isTyping ? 'typewriter-cursor' : ''}`}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+      </div>
+
+      {/* Story Text Bar - Fixed at Bottom */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/90 to-transparent backdrop-blur-md px-6 py-4 z-10">
+        <div className="max-w-4xl mx-auto">
+          <p className={`text-lg md:text-xl leading-relaxed text-white font-medium ${isTyping ? 'typewriter-cursor' : ''}`}>
             {displayedText}
           </p>
         </div>

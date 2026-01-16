@@ -118,6 +118,7 @@ export const useGameStore = create<GameStore>()(
         set({ gameState, isPlaying: true });
 
         // Call backend to start game with AI-generated story
+        console.log('🎮 Starting game... Calling backend at http://localhost:3001/api/game/start');
         try {
           const response = await api.startGame({
             kidName: name,
@@ -125,18 +126,35 @@ export const useGameStore = create<GameStore>()(
             kidId: name.toLowerCase().replace(/\s+/g, '_'),
           });
 
+          console.log('✅ Backend response:', response);
+
+          if (!response.gameId) {
+            throw new Error('Backend did not return gameId');
+          }
+
           set({
             backendGameId: response.gameId,
             gameState: { ...gameState, currentStory: response.welcomeNarration },
           });
 
+          console.log('🎮 Game started successfully! backendGameId:', response.gameId);
+          
           // Play welcome audio
           if (response.audioUrl) {
+            console.log('🔊 Playing welcome audio...');
             set({ currentAudioUrl: response.audioUrl });
             get().playAudio(response.audioUrl);
+          } else {
+            console.warn('⚠️ No audio URL received from backend');
           }
         } catch (error) {
-          console.error('Failed to start game:', error);
+          console.error('❌ FAILED TO START GAME:', error);
+          console.error('Error details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+          });
+          alert('⚠️ Could not connect to backend server. Make sure it is running on http://localhost:3001\n\nError: ' + error.message);
           // Fallback to local story
           set({
             gameState: {
@@ -265,17 +283,28 @@ export const useGameStore = create<GameStore>()(
       setCurrentAudioUrl: (url) => set({ currentAudioUrl: url }),
       
       playAudio: (url: string) => {
-        if (!url) return;
+        if (!url) {
+          console.warn('⚠️ playAudio called with empty URL');
+          return;
+        }
+        console.log('🔊 Attempting to play audio, length:', url.substring(0, 50) + '...');
         const audio = new Audio(url);
-        audio.play().catch((error) => {
-          console.error('Failed to play audio:', error);
-        });
+        audio.play()
+          .then(() => console.log('✅ Audio playing successfully'))
+          .catch((error) => {
+            console.error('❌ Failed to play audio:', error.name, error.message);
+            console.log('💡 Tip: Click anywhere on the page first to enable audio');
+          });
       },
       
       sendActionToBackend: async (action: string) => {
         const { gameState, backendGameId } = get();
-        if (!gameState || !backendGameId) return;
+        if (!gameState || !backendGameId) {
+          console.error('❌ Cannot send action: missing gameState or backendGameId');
+          return;
+        }
 
+        console.log('🎤 Sending action to backend:', action);
         set({ isLoadingAction: true });
         try {
           const response = await api.sendAction({
@@ -283,6 +312,12 @@ export const useGameStore = create<GameStore>()(
             kidAction: action,
             gameState,
             kidId: gameState.character.name.toLowerCase().replace(/\s+/g, '_'),
+          });
+
+          console.log('📖 Received response:', { 
+            hasNarration: !!response.narration, 
+            hasImage: !!response.imageUrl,
+            hasAudio: !!response.audioUrl 
           });
 
           // Update story text from Anthropic

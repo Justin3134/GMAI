@@ -2,12 +2,6 @@ const axios = require("axios");
 const { freepik } = require("../config/apiKeys");
 const { logWarn } = require("../utils/logger");
 
-const enhancePromptForScene = (storyText) => {
-    const basePrompt = "Children's storybook illustration, vibrant colors, magical fantasy scene, high quality, detailed digital art";
-    const scenePrompt = `${basePrompt}, ${storyText.substring(0, 200)}`;
-    return scenePrompt;
-};
-
 const generateSceneImage = async (prompt) => {
     if (!prompt) return null;
     if (!freepik) {
@@ -16,12 +10,10 @@ const generateSceneImage = async (prompt) => {
     }
 
     try {
-        const enhancedPrompt = enhancePromptForScene(prompt);
-
         const response = await axios.post(
             "https://api.freepik.com/v1/ai/text-to-image", {
-                prompt: enhancedPrompt,
-                negative_prompt: "scary, dark, violent, inappropriate, low quality, blurry",
+                prompt: prompt,
+                negative_prompt: "scary, dark, violent, inappropriate, low quality, blurry, photorealistic",
                 num_images: 1,
                 image: {
                     size: "landscape_16_9"
@@ -55,6 +47,47 @@ const generateSceneImage = async (prompt) => {
     }
 };
 
+const generateSceneVideo = async (prompt, previousImageBase64) => {
+    if (!prompt) return null;
+    if (!freepik) {
+        logWarn("freepik_missing_key");
+        return null;
+    }
+
+    try {
+        const response = await axios.post(
+            "https://api.freepik.com/v1/ai/image-to-video/kling-v2-6-pro", {
+                prompt: prompt,
+                duration: "5",
+                negative_prompt: "scary, dark, violent, inappropriate",
+                cfg_scale: 0.5,
+                aspect_ratio: "widescreen_16_9",
+                generate_audio: false
+            }, {
+                headers: {
+                    "x-freepik-api-key": freepik,
+                    "Content-Type": "application/json"
+                },
+                timeout: 30000
+            }
+        );
+
+        return {
+            taskId: response.data?.data?.task_id,
+            status: response.data?.data?.status,
+            generated: response.data?.data?.generated
+        };
+    } catch (error) {
+        logWarn("freepik_video_failed", {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+        return null;
+    }
+};
+
 module.exports = {
-    generateSceneImage
+    generateSceneImage,
+    generateSceneVideo
 };

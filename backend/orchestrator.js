@@ -157,15 +157,21 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
             });
         }
 
-        // Determine voice based on character class
-        const characterClass = updatedState.character?.class || gameState.character?.class;
-        const voiceType = getVoiceTypeForCharacter(characterClass);
+    // Determine voice based on character class
+    const characterClass = updatedState.character?.class || gameState.character?.class;
+    const voiceType = getVoiceTypeForCharacter(characterClass);
 
-        // Generate audio and image in parallel
-        const [audioUrl, imageUrl] = await Promise.all([
-            textToSpeech(narration, voiceType),
-            generateSceneImage(narration)
-        ]);
+    // Generate specialized image prompt via Visual Agent
+    const imagePrompt = await generateImagePrompt(narration, characterClass);
+    console.log('🎨 Generated image prompt:', imagePrompt);
+
+    // Generate audio and image in parallel
+    const [audioUrl, imageUrl] = await Promise.all([
+      textToSpeech(narration, voiceType),
+      generateSceneImage(imagePrompt)
+    ]);
+
+    console.log('✅ Assets generated:', { hasAudio: !!audioUrl, hasImage: !!imageUrl });
 
         return {
             narration,
