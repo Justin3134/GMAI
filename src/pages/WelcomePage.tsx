@@ -91,7 +91,7 @@ export default function WelcomePage() {
         >
           <Link 
             to="/parent"
-            className="text-sm text-card/70 hover:text-card transition-colors underline"
+            className="text-sm text-foreground hover:text-foreground/80 transition-colors underline"
           >
             👨‍👩‍👧 Parent Dashboard
           </Link>
