@@ -17,7 +17,8 @@ const {
     generateImagePrompt
 } = require("./agents/visualAgent");
 const {
-    textToSpeech
+    textToSpeech,
+    textToSpeechDynamic
 } = require("./services/elevenlabs");
 const {
     generateSceneImage,
@@ -231,9 +232,9 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
         const visualPrompt = await generateImagePrompt(narration, characterClass);
         console.log('🎨 Generated visual prompt:', visualPrompt);
 
-        // Generate audio and video in parallel
+        // Generate audio with dynamic character voices and image
         const [audioUrl, mediaUrl] = await Promise.all([
-            textToSpeech(narration, voiceType),
+            textToSpeechDynamic(narration),  // Detects character and uses appropriate voice
             generateSceneVideo(visualPrompt, characterClass, narration)
         ]);
 

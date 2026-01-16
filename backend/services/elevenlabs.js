@@ -3,11 +3,37 @@ const { elevenlabs } = require("../config/apiKeys");
 const { logWarn, logError } = require("../utils/logger");
 
 const VOICE_IDS = {
-  narrator: "21m00Tcm4TlvDq8ikWAM", // Rachel
-  dragon: "pNInz6obpgDQGcFmaJgB", // Adam
-  fairy: "EXAVITQu4vr4xnSDxMaL", // Bella
-  wizard: "ErXwobaYiN019PkySvjV", // Antoni
-  knight: "TxGEqnHWrfWFTfGW9XjX" // Josh
+  narrator: "21m00Tcm4TlvDq8ikWAM", // Rachel - warm narrator
+  dragon: "pNInz6obpgDQGcFmaJgB", // Adam - deep dragon
+  fairy: "EXAVITQu4vr4xnSDxMaL", // Bella - light fairy
+  wizard: "ErXwobaYiN019PkySvjV", // Antoni - wise wizard
+  knight: "TxGEqnHWrfWFTfGW9XjX", // Josh - brave knight
+  villager: "21m00Tcm4TlvDq8ikWAM", // Rachel - friendly villager
+  oldwoman: "EXAVITQu4vr4xnSDxMaL", // Bella - old woman
+  merchant: "pNInz6obpgDQGcFmaJgB" // Adam - merchant
+};
+
+const detectCharacterInText = (text) => {
+  const lower = text.toLowerCase();
+  
+  // Check for character mentions and dialogue
+  if (lower.includes("dragon says") || lower.includes("dragon asks") || lower.includes("dragon roars")) {
+    return "dragon";
+  }
+  if (lower.includes("wizard says") || lower.includes("wizard asks") || lower.includes("wise wizard")) {
+    return "wizard";
+  }
+  if (lower.includes("fairy says") || lower.includes("fairy asks") || lower.includes("fairy whispers")) {
+    return "fairy";
+  }
+  if (lower.includes("knight says") || lower.includes("knight shouts") || lower.includes("brave knight")) {
+    return "knight";
+  }
+  if (lower.includes("villager says") || lower.includes("villager asks") || lower.includes("old woman")) {
+    return "villager";
+  }
+  
+  return "narrator";
 };
 
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -115,7 +141,18 @@ const speechToText = async (audioBlob) => {
   }
 };
 
+const textToSpeechDynamic = async (text) => {
+  if (!text) return null;
+  
+  // Detect which character is speaking and use their voice
+  const character = detectCharacterInText(text);
+  console.log('🎭 Detected character voice:', character);
+  
+  return await textToSpeech(text, character);
+};
+
 module.exports = {
   textToSpeech,
+  textToSpeechDynamic,
   speechToText
 };
