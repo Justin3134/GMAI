@@ -3,7 +3,8 @@ const {
     freepik
 } = require("../config/apiKeys");
 const {
-    logWarn
+    logWarn,
+    logInfo
 } = require("../utils/logger");
 
 const generateSceneImage = async (prompt) => {
@@ -51,44 +52,10 @@ const generateSceneImage = async (prompt) => {
     }
 };
 
-const generateSceneVideo = async (prompt, previousImageBase64) => {
-    if (!prompt) return null;
-    if (!freepik) {
-        logWarn("freepik_missing_key");
-        return null;
-    }
-
-    try {
-        const response = await axios.post(
-            "https://api.freepik.com/v1/ai/image-to-video/kling-v2-6-pro", {
-                prompt: prompt,
-                duration: "5",
-                negative_prompt: "scary, dark, violent, inappropriate",
-                cfg_scale: 0.5,
-                aspect_ratio: "widescreen_16_9",
-                generate_audio: false
-            }, {
-                headers: {
-                    "x-freepik-api-key": freepik,
-                    "Content-Type": "application/json"
-                },
-                timeout: 30000
-            }
-        );
-
-        return {
-            taskId: response.data ? .data ? .task_id,
-            status: response.data ? .data ? .status,
-            generated: response.data ? .data ? .generated
-        };
-    } catch (error) {
-        logWarn("freepik_video_failed", {
-            message: error.message,
-            status: error.response ? .status,
-            data: error.response ? .data
-        });
-        return null;
-    }
+const generateSceneVideo = async (prompt, characterClass, storyContext) => {
+    // For now, use images for fast response
+    // Videos take 30-60s which is too slow for interactive gameplay
+    return await generateSceneImage(prompt);
 };
 
 module.exports = {

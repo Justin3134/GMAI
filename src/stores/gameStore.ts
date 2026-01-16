@@ -18,6 +18,11 @@ interface GameStore {
   isLoadingAction: boolean;
   currentAudioUrl: string | null;
   
+  // Answer tracking
+  answersCorrect: number;
+  answersWrong: number;
+  totalQuestions: number;
+  
   // Voice state
   isListening: boolean;
   isSpeaking: boolean;
@@ -50,6 +55,7 @@ interface GameStore {
   setCurrentAudioUrl: (url: string | null) => void;
   sendActionToBackend: (action: string) => Promise<void>;
   playAudio: (url: string) => void;
+  recordAnswer: (correct: boolean) => void;
   
   // Voice actions
   setIsListening: (listening: boolean) => void;
@@ -100,6 +106,9 @@ export const useGameStore = create<GameStore>()(
       sceneImageUrl: null,
       isLoadingAction: false,
       currentAudioUrl: null,
+      answersCorrect: 0,
+      answersWrong: 0,
+      totalQuestions: 0,
       isListening: false,
       transcript: '',
       
@@ -132,13 +141,30 @@ export const useGameStore = create<GameStore>()(
             throw new Error('Backend did not return gameId');
           }
 
+          const updatedGameState = {
+            ...gameState,
+            currentStory: response.welcomeNarration
+          };
+
           set({
             backendGameId: response.gameId,
-            gameState: { ...gameState, currentStory: response.welcomeNarration },
+            gameState: updatedGameState,
             sceneImageUrl: response.imageUrl || null,
           });
 
-          console.log('🎮 Game started successfully! backendGameId:', response.gameId);
+          // Verify it was saved
+          setTimeout(() => {
+            const currentState = get();
+            console.log('🎮 Game started - State verified:', {
+              backendGameId: currentState.backendGameId,
+              hasGameState: !!currentState.gameState,
+              verified: currentState.backendGameId === response.gameId
+            });
+            
+            if (!currentState.backendGameId) {
+              console.error('❌ CRITICAL: backendGameId was not saved!');
+            }
+          }, 100);
           
           // Play welcome audio
           if (response.audioUrl) {
@@ -305,12 +331,24 @@ export const useGameStore = create<GameStore>()(
       
       sendActionToBackend: async (action: string) => {
         const { gameState, backendGameId } = get();
+        
+        console.log('🎤 Attempting to send action...', {
+          action,
+          hasGameState: !!gameState,
+          hasBackendGameId: !!backendGameId,
+          backendGameId: backendGameId
+        });
+        
         if (!gameState || !backendGameId) {
-          console.error('❌ Cannot send action: missing gameState or backendGameId');
+          console.error('❌ Cannot send action: missing gameState or backendGameId', {
+            hasGameState: !!gameState,
+            hasBackendGameId: !!backendGameId
+          });
+          alert('⚠️ Game not properly initialized. Please refresh and start a new game.');
           return;
         }
 
-        console.log('🎤 Sending action to backend:', action);
+        console.log('✅ Sending action to backend:', action);
         set({ isLoadingAction: true });
         try {
           const response = await api.sendAction({
@@ -383,13 +421,38 @@ export const useGameStore = create<GameStore>()(
       setIsListening: (listening) => set({ isListening: listening }),
       setTranscript: (transcript) => set({ transcript }),
       
+      recordAnswer: (correct) => {
+        set((state) => ({
+          answersCorrect: state.answersCorrect + (correct ? 1 : 0),
+          answersWrong: state.answersWrong + (correct ? 0 : 1),
+          totalQuestions: state.totalQuestions + 1,
+        }));
+      },
+      
       startNewGame: () => set({ isPlaying: true }),
       continueGame: () => set({ isPlaying: true }),
-      resetGame: () => set({ gameState: null, isPlaying: false, agentDecisions: [], backendGameId: null, sceneImageUrl: null, currentAudioUrl: null }),
+      resetGame: () => set({ 
+        gameState: null, 
+        isPlaying: false, 
+        agentDecisions: [], 
+        backendGameId: null, 
+        sceneImageUrl: null, 
+        currentAudioUrl: null,
+        answersCorrect: 0,
+        answersWrong: 0,
+        totalQuestions: 0,
+      }),
     }),
     {
       name: 'adventure-tales-game',
-      partialize: (state) => ({ gameState: state.gameState }),
+      partialize: (state) => ({ 
+        gameState: state.gameState,
+        backendGameId: state.backendGameId,
+        sceneImageUrl: state.sceneImageUrl,
+        answersCorrect: state.answersCorrect,
+        answersWrong: state.answersWrong,
+        totalQuestions: state.totalQuestions,
+      }),
     }
   )
 );

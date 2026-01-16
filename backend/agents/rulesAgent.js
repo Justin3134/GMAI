@@ -1,65 +1,80 @@
-const { client, withTimeout, extractText, safeJsonParse } = require("./agentUtils");
-const { logWarn } = require("../utils/logger");
+const {
+    client,
+    withTimeout,
+    extractText,
+    safeJsonParse
+} = require("./agentUtils");
+const {
+    logWarn
+} = require("../utils/logger");
 
-const buildPrompt = (kidAction, gameState) => `You are the game master enforcing rules and mechanics.
+const buildPrompt = (kidAction, gameState) => `You are a supportive game master who helps kids progress through adventures.
 
-Current game state:
+Current state:
 - HP: ${gameState?.hp ?? 5} / 5
 - Magic: ${gameState?.magic ?? 3} / 3
-- Inventory: ${JSON.stringify(gameState?.inventory || [])}
-- Location: ${gameState?.location || "unknown"}
+- Location: ${gameState?.location || "village"}
 - Level: ${gameState?.level || 1}
+- Last story: ${gameState?.lastStory || ""}
 
-Kid wants to: ${kidAction}
+Student said: "${kidAction}"
 
-Determine:
-1. Is this action possible given current state?
-2. What changes to game state?
-3. Does this require a skill check?
+Your job:
+1. ALWAYS mark action as valid (help them progress!)
+2. If it's an answer to a math question, note if correct/wrong
+3. Continue the adventure naturally
+4. Suggest new location if they're exploring
 
 Output JSON:
 {
-  "valid": true/false,
-  "reason": "Why possible or not",
+  "valid": true,
+  "reason": "Student's action accepted",
   "stateChanges": {
-    "hp": 4,
-    "magic": 2,
-    "inventory": ["staff", "potion"],
-    "location": "cave"
+    "location": "new_location_if_changed"
   },
-  "needsChallenge": true/false,
-  "challengeType": "math" // if applicable
-}`;
+  "needsChallenge": false,
+  "wasAnswer": false,
+  "answerCorrect": null
+}
+
+ALWAYS set "valid": true - never block the student!`;
 
 const validateAction = async (kidAction, gameState = {}) => {
-  const fallback = {
-    valid: true,
-    reason: "Action accepted.",
-    stateChanges: { ...gameState },
-    needsChallenge: false,
-    challengeType: null
-  };
+    const fallback = {
+        valid: true,
+        reason: "Action accepted.",
+        stateChanges: {
+            ...gameState
+        },
+        needsChallenge: false,
+        challengeType: null
+    };
 
-  try {
-    const response = await withTimeout(
-      client.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 300,
-        temperature: 0.1,
-        system: buildPrompt(kidAction, gameState),
-        messages: [{ role: "user", content: "Validate the action." }]
-      }),
-      8000
-    );
+    try {
+        const response = await withTimeout(
+            client.messages.create({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 300,
+                temperature: 0.1,
+                system: buildPrompt(kidAction, gameState),
+                messages: [{
+                    role: "user",
+                    content: "Validate the action."
+                }]
+            }),
+            8000
+        );
 
-    const text = extractText(response);
-    return safeJsonParse(text, fallback);
-  } catch (error) {
-    logWarn("rules_agent_failed", { message: error.message });
-    return fallback;
-  }
+        const text = extractText(response);
+        return safeJsonParse(text, fallback);
+    } catch (error) {
+        logWarn("rules_agent_failed", {
+            message: error.message
+        });
+        return fallback;
+    }
 };
 
 module.exports = {
-  validateAction
+    validateAction
 };

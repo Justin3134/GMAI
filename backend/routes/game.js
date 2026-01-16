@@ -6,11 +6,18 @@ const {
     generateStory
 } = require("../agents/storyAgent");
 const {
+    generateImagePrompt
+} = require("../agents/visualAgent");
+const {
     createChallenge
 } = require("../agents/educationAgent");
 const {
     textToSpeech
 } = require("../services/elevenlabs");
+const {
+    generateSceneImage,
+    generateSceneVideo
+} = require("../services/freepik");
 const {
     processKidAction
 } = require("../orchestrator");
@@ -67,13 +74,13 @@ router.post("/api/game/start", async (req, res, next) => {
         };
         const voiceType = voiceMap[characterClass] || "narrator";
 
-        // Generate image prompt and create welcome scene
-        const imagePrompt = await generateImagePrompt(welcomeNarration, characterClass);
-        console.log('🎨 Welcome image prompt:', imagePrompt);
+        // Generate visual prompt and create welcome video
+        const visualPrompt = await generateImagePrompt(welcomeNarration, characterClass);
+        console.log('🎨 Welcome visual prompt:', visualPrompt);
 
-        const [audioUrl, imageUrl] = await Promise.all([
+        const [audioUrl, mediaUrl] = await Promise.all([
             textToSpeech(welcomeNarration, voiceType),
-            generateSceneImage(imagePrompt)
+            generateSceneVideo(visualPrompt, characterClass, welcomeNarration)
         ]);
 
         games.set(gameId, gameState);
@@ -83,7 +90,7 @@ router.post("/api/game/start", async (req, res, next) => {
             gameState,
             welcomeNarration,
             audioUrl,
-            imageUrl
+            imageUrl: mediaUrl // Video or image
         });
     } catch (error) {
         next(error);

@@ -48,5 +48,17 @@ export const api = {
     if (!response.ok) throw new Error('Failed to get game state');
     return response.json();
   },
+
+  getParentProgress: async (kidId: string): Promise<any> => {
+    const response = await fetch(`${API_URL}/api/parent/progress/${kidId}`);
+    if (!response.ok) throw new Error('Failed to get progress');
+    return response.json();
+  },
+
+  getTeacherOverview: async (kidId: string): Promise<any> => {
+    const response = await fetch(`${API_URL}/api/teacher/overview/${kidId}`);
+    if (!response.ok) throw new Error('Failed to get overview');
+    return response.json();
+  },
 };
 

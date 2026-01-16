@@ -27,6 +27,19 @@ export default function WelcomePage() {
           transition={{ duration: 0.8 }}
           className="text-center"
         >
+          {/* Logo */}
+          <motion.div
+            animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            className="mb-6"
+          >
+            <img 
+              src="/logo.svg" 
+              alt="Adventure Tales Logo" 
+              className="w-32 h-32 mx-auto drop-shadow-2xl"
+            />
+          </motion.div>
+
           {/* Title */}
           <motion.div
             animate={{ scale: [1, 1.02, 1] }}

@@ -41,33 +41,35 @@ export default function GamePage() {
   if (!gameState) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <EducationalChallenge />
 
-      <div className="flex h-screen">
-        {/* Main Game Area */}
-        <div className="flex-1 flex flex-col p-4">
-          {/* Top Bar */}
-          <div className="flex items-center gap-4 mb-4">
-            <Link to="/">
-              <Button variant="outline" size="icon" className="rounded-xl">
-                <Home className="w-5 h-5" />
-              </Button>
-            </Link>
-            
-            <div className="flex-1">
-              <CharacterCard />
-            </div>
-
-          </div>
-
-          {/* Main Content - Story takes full width */}
-          <div className="flex-1 flex flex-col gap-4 min-h-0">
-            <StoryPanel />
-            <VoiceButton />
-          </div>
+      {/* Compact Header */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2 bg-background/80 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <Link to="/">
+            <Button variant="outline" size="sm" className="rounded-lg h-8">
+              <Home className="w-4 h-4" />
+            </Button>
+          </Link>
+          <CharacterCard />
         </div>
+        
+        <Link to="/">
+          <Button variant="outline" size="sm" className="rounded-lg h-8 text-xs">
+            End Journey
+          </Button>
+        </Link>
+      </div>
 
+      {/* Fullscreen Story */}
+      <div className="h-screen flex flex-col pt-12 pb-2">
+        <div className="flex-1 min-h-0 mb-2">
+          <StoryPanel />
+        </div>
+        <div className="flex-shrink-0 bg-background/80 backdrop-blur-sm p-3 rounded-t-2xl">
+          <VoiceButton />
+        </div>
       </div>
     </div>
   );

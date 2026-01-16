@@ -1,34 +1,44 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Shield, Clock, Target, Download } from 'lucide-react';
+import { ArrowLeft, Shield, Clock, Target, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/game/ProgressBar';
-
-// Mock data
-const CHILD_DATA = {
-  name: 'Emma',
-  thisWeek: {
-    adventures: 5,
-    minutes: 47,
-  },
-  skills: {
-    math: { progress: 85, details: ['Division: ⭐⭐⭐ Mastered', 'Fractions: ⭐⭐ Improving'] },
-    vocabulary: { progress: 70, wordsLearned: 12 },
-    reading: { progress: 95 },
-    science: { progress: 60 },
-  },
-  safety: {
-    contentFiltering: true,
-    ageAppropriate: 100,
-    safetyBlocks: 3,
-  },
-  settings: {
-    sessionLimit: 30,
-    difficulty: 'Adaptive',
-  },
-};
+import { useGameStore } from '@/stores/gameStore';
+import { api } from '@/lib/api';
 
 export default function ParentDashboardPage() {
+  const gameState = useGameStore((state) => state.gameState);
+  const answersCorrect = useGameStore((state) => state.answersCorrect);
+  const answersWrong = useGameStore((state) => state.answersWrong);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!gameState) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const kidId = gameState.character.name.toLowerCase().replace(/\s+/g, '_');
+        const data = await api.getParentProgress(kidId);
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [gameState]);
+
+  const childName = gameState?.character.name || 'Student';
+  const totalQuestions = answersCorrect + answersWrong;
+  const accuracy = totalQuestions > 0 ? Math.round((answersCorrect / totalQuestions) * 100) : 0;
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">

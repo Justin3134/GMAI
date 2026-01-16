@@ -39,13 +39,32 @@ const {
 const {
     logWarn
 } = require("./utils/logger");
+const {
+    extractNumber,
+    isUnclearResponse,
+    cleanResponse
+} = require("./utils/textParser");
 
 const NPC_KEYWORDS = ["dragon", "fairy", "wizard", "knight"];
+
+// Store recent questions for answer validation
+const conversationMemory = new Map(); // kidId -> { lastQuestion, lastAnswer, questionCount }
 
 const detectNpc = (text) => {
     if (!text) return null;
     const lower = text.toLowerCase();
     return NPC_KEYWORDS.find((npc) => lower.includes(npc)) || null;
+};
+
+const saveQuestion = (kidId, question, extractedNumber) => {
+    const memory = conversationMemory.get(kidId) || {
+        questions: [],
+        questionCount: 0
+    };
+    memory.lastQuestion = question;
+    memory.lastExpectedAnswer = extractedNumber;
+    memory.questionCount = (memory.questionCount || 0) + 1;
+    conversationMemory.set(kidId, memory);
 };
 
 const getVoiceTypeForCharacter = (characterClass) => {
@@ -62,10 +81,42 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
     const decisions = {};
 
     try {
+        // Get conversation memory for this student
+        const memory = conversationMemory.get(kidId) || {
+            questions: [],
+            questionCount: 0
+        };
+
+        // Parse student response for better understanding
+        const extractedNumber = extractNumber(kidAction);
+        const isUnclear = isUnclearResponse(kidAction);
+        const cleanedAction = cleanResponse(kidAction);
+
+        // Add parsing info and memory to game state for agents to use
+        const enhancedGameState = {
+            ...gameState,
+            parsedNumber: extractedNumber,
+            isUnclearResponse: isUnclear,
+            cleanedAction: cleanedAction || kidAction,
+            lastQuestion: memory.lastQuestion,
+            lastExpectedAnswer: memory.lastExpectedAnswer,
+            questionCount: memory.questionCount,
+            conversationHistory: memory.questions || []
+        };
+
+        console.log('📝 Parsed student input:', {
+            original: kidAction,
+            number: extractedNumber,
+            unclear: isUnclear,
+            cleaned: cleanedAction,
+            lastQuestion: memory.lastQuestion,
+            expectedAnswer: memory.lastExpectedAnswer
+        });
+
         const [storyResult, safetyResult, rulesResult] = await Promise.all([
             (async () => {
                 const t0 = Date.now();
-                const text = await generateStory(kidAction, gameState, gameState.context || "");
+                const text = await generateStory(kidAction, enhancedGameState, enhancedGameState.context || "");
                 decisions.story = {
                     text,
                     time: (Date.now() - t0) / 1000
@@ -78,7 +129,7 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
             })(),
             (async () => {
                 const t0 = Date.now();
-                const review = await reviewContent(gameState.lastStory || "", gameState.context || "");
+                const review = await reviewContent(enhancedGameState.lastStory || "", enhancedGameState.context || "");
                 decisions.safety = {
                     safe: review.safe,
                     time: (Date.now() - t0) / 1000
@@ -91,7 +142,7 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
             })(),
             (async () => {
                 const t0 = Date.now();
-                const rules = await validateAction(kidAction, gameState);
+                const rules = await validateAction(kidAction, enhancedGameState);
                 decisions.rules = {
                     valid: rules.valid,
                     time: (Date.now() - t0) / 1000,
@@ -112,6 +163,17 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
 
         if (!rulesResult.valid) {
             narration = `That action isn't possible right now. ${rulesResult.reason} What would you like to try instead?`;
+        }
+
+        // Extract any new question from the narration for next turn
+        const questionMatch = narration.match(/(\d+)\s*[\+\-\×\*]\s*(\d+)|how many|what is|total/i);
+        if (questionMatch) {
+            // Try to extract the expected answer from the question
+            const nums = narration.match(/(\d+)/g);
+            if (nums && nums.length >= 2) {
+                const expectedAnswer = parseInt(nums[0]) + parseInt(nums[1]); // Simple assumption
+                saveQuestion(kidId, narration, expectedAnswer);
+            }
         }
 
         const updatedState = {
@@ -165,25 +227,25 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
         const characterClass = updatedState.character ? .class || gameState.character ? .class;
         const voiceType = getVoiceTypeForCharacter(characterClass);
 
-        // Generate specialized image prompt via Visual Agent
-        const imagePrompt = await generateImagePrompt(narration, characterClass);
-        console.log('🎨 Generated image prompt:', imagePrompt);
+        // Generate specialized visual prompt via Visual Agent
+        const visualPrompt = await generateImagePrompt(narration, characterClass);
+        console.log('🎨 Generated visual prompt:', visualPrompt);
 
-        // Generate audio and image in parallel
-        const [audioUrl, imageUrl] = await Promise.all([
+        // Generate audio and video in parallel
+        const [audioUrl, mediaUrl] = await Promise.all([
             textToSpeech(narration, voiceType),
-            generateSceneImage(imagePrompt)
+            generateSceneVideo(visualPrompt, characterClass, narration)
         ]);
 
         console.log('✅ Assets generated:', {
             hasAudio: !!audioUrl,
-            hasImage: !!imageUrl
+            hasMedia: !!mediaUrl
         });
 
         return {
             narration,
             audioUrl,
-            imageUrl,
+            imageUrl: mediaUrl, // Video or image fallback
             gameState: updatedState,
             agentDecisions: decisions,
             challenge

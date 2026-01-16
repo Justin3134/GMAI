@@ -69,21 +69,41 @@ export function StoryPanel() {
         <span className="font-semibold text-foreground">{gameState.location.name}</span>
       </div>
       
-      {/* Scene Image - Fullscreen */}
-      <div className="relative flex-1 w-full h-full overflow-hidden">
-        <motion.img
-          key={displayImage}
-          initial={{ opacity: 0, scale: 1.02 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7 }}
-          src={displayImage}
-          alt="Adventure scene"
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.currentTarget.src = forestScene;
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+      {/* Scene Media - Fixed Size Box */}
+      <div className="relative flex-1 w-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-4">
+        <div className="relative w-full max-w-6xl aspect-video">
+          {displayImage?.includes('data:video/') || displayImage?.endsWith('.mp4') ? (
+            <motion.video
+              key={displayImage}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7 }}
+              src={displayImage}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-2xl shadow-2xl"
+              onError={(e) => {
+                e.currentTarget.poster = forestScene;
+              }}
+            />
+          ) : (
+            <motion.img
+              key={displayImage}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7 }}
+              src={displayImage}
+              alt="Adventure scene"
+              className="w-full h-full object-cover rounded-2xl shadow-2xl"
+              onError={(e) => {
+                e.currentTarget.src = forestScene;
+              }}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none rounded-2xl" />
+        </div>
       </div>
 
       {/* Story Text Bar - Fixed at Bottom */}

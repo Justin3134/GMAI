@@ -24,54 +24,50 @@ export function CharacterCard() {
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-game flex items-center gap-4 bg-card/90 backdrop-blur-sm"
+      className="flex items-center gap-2 px-4 py-2 bg-card/90 backdrop-blur-sm rounded-lg"
     >
-      <div className="text-kid-3xl">
+      <div className="text-lg">
         {CLASS_EMOJIS[character.class]}
       </div>
       
-      <div className="flex-1">
-        <h2 className="text-kid-lg font-bold text-foreground">
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-bold text-foreground">
           {character.name} the {CLASS_LABELS[character.class]}
         </h2>
         
-        <div className="flex items-center gap-3 mt-1">
-          {/* Health */}
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: character.maxHealth }).map((_, i) => (
-              <span
-                key={i}
-                className={`text-sm transition-all duration-300 ${
-                  i < character.health ? 'heart-beat' : 'opacity-30'
-                }`}
-              >
-                ❤️
-              </span>
-            ))}
-          </div>
-          
-          {/* Magic */}
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: character.maxMagic }).map((_, i) => (
-              <span
-                key={i}
-                className={`text-sm transition-all duration-300 ${
-                  i < character.magic ? 'star-shine' : 'opacity-30'
-                }`}
-              >
-                ⭐
-              </span>
-            ))}
-          </div>
+        {/* Health */}
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: character.maxHealth }).map((_, i) => (
+            <span
+              key={i}
+              className={`text-xs transition-all duration-300 ${
+                i < character.health ? 'heart-beat' : 'opacity-30'
+              }`}
+            >
+              ❤️
+            </span>
+          ))}
         </div>
-      </div>
-      
-      {/* Level */}
-      <div className="text-center px-4">
-        <div className="text-kid-2xl font-bold text-primary">
-          {character.level}
+        
+        {/* Magic */}
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: character.maxMagic }).map((_, i) => (
+            <span
+              key={i}
+              className={`text-xs transition-all duration-300 ${
+                i < character.magic ? 'star-shine' : 'opacity-30'
+              }`}
+            >
+              ⭐
+            </span>
+          ))}
         </div>
-        <div className="text-sm text-muted-foreground">Level</div>
+
+        {/* Level */}
+        <div className="flex items-center gap-1 text-sm text-muted-foreground ml-2">
+          <span className="font-bold text-primary">{character.level}</span>
+          <span>Lvl</span>
+        </div>
       </div>
     </motion.div>
   );
