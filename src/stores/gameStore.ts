@@ -135,6 +135,7 @@ export const useGameStore = create<GameStore>()(
           set({
             backendGameId: response.gameId,
             gameState: { ...gameState, currentStory: response.welcomeNarration },
+            sceneImageUrl: response.imageUrl || null,
           });
 
           console.log('🎮 Game started successfully! backendGameId:', response.gameId);
@@ -146,6 +147,11 @@ export const useGameStore = create<GameStore>()(
             get().playAudio(response.audioUrl);
           } else {
             console.warn('⚠️ No audio URL received from backend');
+          }
+
+          // Display welcome image
+          if (response.imageUrl) {
+            console.log('🖼️ Welcome image loaded');
           }
         } catch (error) {
           console.error('❌ FAILED TO START GAME:', error);

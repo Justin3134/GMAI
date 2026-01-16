@@ -1,5 +1,11 @@
-const { client, withTimeout, extractText } = require("./agentUtils");
-const { logWarn } = require("../utils/logger");
+const {
+    client,
+    withTimeout,
+    extractText
+} = require("./agentUtils");
+const {
+    logWarn
+} = require("../utils/logger");
 
 const buildPrompt = (kidAction, gameState, context) => `You are an AI Game Master for children aged 8-12. You guide them through educational adventures.
 
@@ -22,25 +28,30 @@ Location: ${gameState?.location || "village"}
 Generate the next brief narration ending with a question.`;
 
 const generateStory = async (kidAction, gameState = {}, context = "") => {
-  try {
-    const response = await withTimeout(
-      client.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 500,
-        temperature: 0.8,
-        system: buildPrompt(kidAction, gameState, context),
-        messages: [{ role: "user", content: "Continue the adventure." }]
-      }),
-      10000
-    );
+    try {
+        const response = await withTimeout(
+            client.messages.create({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 500,
+                temperature: 0.8,
+                system: buildPrompt(kidAction, gameState, context),
+                messages: [{
+                    role: "user",
+                    content: "Continue the adventure."
+                }]
+            }),
+            10000
+        );
 
-    return extractText(response);
-  } catch (error) {
-    logWarn("story_agent_failed", { message: error.message });
-    return "The story takes a gentle pause. What would you like to do next?";
-  }
+        return extractText(response);
+    } catch (error) {
+        logWarn("story_agent_failed", {
+            message: error.message
+        });
+        return "The story takes a gentle pause. What would you like to do next?";
+    }
 };
 
 module.exports = {
-  generateStory
+    generateStory
 };

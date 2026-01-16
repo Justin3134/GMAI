@@ -1,6 +1,10 @@
 const axios = require("axios");
-const { freepik } = require("../config/apiKeys");
-const { logWarn } = require("../utils/logger");
+const {
+    freepik
+} = require("../config/apiKeys");
+const {
+    logWarn
+} = require("../utils/logger");
 
 const generateSceneImage = async (prompt) => {
     if (!prompt) return null;
@@ -32,16 +36,16 @@ const generateSceneImage = async (prompt) => {
             }
         );
 
-        const imageData = response.data?.data?.[0];
-        if (imageData?.base64) {
+        const imageData = response.data ? .data ? . [0];
+        if (imageData ? .base64) {
             return `data:image/jpeg;base64,${imageData.base64}`;
         }
-        return response.data?.data?.[0]?.url || response.data?.url || null;
+        return response.data ? .data ? . [0] ? .url || response.data ? .url || null;
     } catch (error) {
         logWarn("freepik_image_failed", {
             message: error.message,
-            status: error.response?.status,
-            data: error.response?.data
+            status: error.response ? .status,
+            data: error.response ? .data
         });
         return null;
     }
@@ -73,15 +77,15 @@ const generateSceneVideo = async (prompt, previousImageBase64) => {
         );
 
         return {
-            taskId: response.data?.data?.task_id,
-            status: response.data?.data?.status,
-            generated: response.data?.data?.generated
+            taskId: response.data ? .data ? .task_id,
+            status: response.data ? .data ? .status,
+            generated: response.data ? .data ? .generated
         };
     } catch (error) {
         logWarn("freepik_video_failed", {
             message: error.message,
-            status: error.response?.status,
-            data: error.response?.data
+            status: error.response ? .status,
+            data: error.response ? .data
         });
         return null;
     }

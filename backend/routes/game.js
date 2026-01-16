@@ -67,7 +67,14 @@ router.post("/api/game/start", async (req, res, next) => {
         };
         const voiceType = voiceMap[characterClass] || "narrator";
 
-        const audioUrl = await textToSpeech(welcomeNarration, voiceType);
+        // Generate image prompt and create welcome scene
+        const imagePrompt = await generateImagePrompt(welcomeNarration, characterClass);
+        console.log('🎨 Welcome image prompt:', imagePrompt);
+
+        const [audioUrl, imageUrl] = await Promise.all([
+            textToSpeech(welcomeNarration, voiceType),
+            generateSceneImage(imagePrompt)
+        ]);
 
         games.set(gameId, gameState);
 
@@ -75,7 +82,8 @@ router.post("/api/game/start", async (req, res, next) => {
             gameId,
             gameState,
             welcomeNarration,
-            audioUrl
+            audioUrl,
+            imageUrl
         });
     } catch (error) {
         next(error);

@@ -14,10 +14,14 @@ const {
     npcRespond
 } = require("./agents/npcAgent");
 const {
+    generateImagePrompt
+} = require("./agents/visualAgent");
+const {
     textToSpeech
 } = require("./services/elevenlabs");
 const {
-    generateSceneImage
+    generateSceneImage,
+    generateSceneVideo
 } = require("./services/freepik");
 const {
     analyzeEmotion,
@@ -153,25 +157,28 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
         if (engagementScore !== null) {
             await logEngagement(kidId, {
                 engagementScore,
-                emotion: emotionData?.emotion
+                emotion: emotionData ? .emotion
             });
         }
 
-    // Determine voice based on character class
-    const characterClass = updatedState.character?.class || gameState.character?.class;
-    const voiceType = getVoiceTypeForCharacter(characterClass);
+        // Determine voice based on character class
+        const characterClass = updatedState.character ? .class || gameState.character ? .class;
+        const voiceType = getVoiceTypeForCharacter(characterClass);
 
-    // Generate specialized image prompt via Visual Agent
-    const imagePrompt = await generateImagePrompt(narration, characterClass);
-    console.log('🎨 Generated image prompt:', imagePrompt);
+        // Generate specialized image prompt via Visual Agent
+        const imagePrompt = await generateImagePrompt(narration, characterClass);
+        console.log('🎨 Generated image prompt:', imagePrompt);
 
-    // Generate audio and image in parallel
-    const [audioUrl, imageUrl] = await Promise.all([
-      textToSpeech(narration, voiceType),
-      generateSceneImage(imagePrompt)
-    ]);
+        // Generate audio and image in parallel
+        const [audioUrl, imageUrl] = await Promise.all([
+            textToSpeech(narration, voiceType),
+            generateSceneImage(imagePrompt)
+        ]);
 
-    console.log('✅ Assets generated:', { hasAudio: !!audioUrl, hasImage: !!imageUrl });
+        console.log('✅ Assets generated:', {
+            hasAudio: !!audioUrl,
+            hasImage: !!imageUrl
+        });
 
         return {
             narration,
