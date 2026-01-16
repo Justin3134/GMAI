@@ -103,7 +103,7 @@ export default function WelcomePage() {
           </Link>
           <Link 
             to="/agents"
-            className="text-sm text-card/70 hover:text-card transition-colors underline"
+            className="text-sm text-foreground hover:text-foreground/80 transition-colors underline"
           >
             🤖 Agent Demo
           </Link>
