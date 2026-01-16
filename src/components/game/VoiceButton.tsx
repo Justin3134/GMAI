@@ -1,13 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Volume2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, Send } from 'lucide-react';
 import { useGameStore } from '@/stores/gameStore';
+import { Button } from '@/components/ui/button';
 
 export function VoiceButton() {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const transcript = useGameStore((state) => state.transcript);
   const setTranscript = useGameStore((state) => state.setTranscript);
+  const sendActionToBackend = useGameStore((state) => state.sendActionToBackend);
+  const recognitionRef = useRef<any>(null);
 
   const handleStartListening = useCallback(async () => {
     try {
@@ -20,6 +23,7 @@ export function VoiceButton() {
       }
 
       const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
@@ -31,7 +35,15 @@ export function VoiceButton() {
 
       recognition.onresult = (event) => {
         const result = event.results[event.results.length - 1];
-        setTranscript(result[0].transcript);
+        const newTranscript = result[0].transcript;
+        setTranscript(newTranscript);
+        
+        // If final result, automatically send to backend
+        if (result.isFinal && newTranscript.trim()) {
+          setTimeout(() => {
+            handleSendAction(newTranscript);
+          }, 500);
+        }
       };
 
       recognition.onerror = (event) => {
@@ -51,8 +63,22 @@ export function VoiceButton() {
   }, [setTranscript]);
 
   const handleStopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
     setIsListening(false);
   }, []);
+
+  const handleSendAction = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    
+    try {
+      await sendActionToBackend(text);
+      setTranscript(''); // Clear transcript after sending
+    } catch (err) {
+      setError('Failed to send action');
+    }
+  }, [sendActionToBackend, setTranscript]);
 
   return (
     <motion.div
@@ -108,17 +134,26 @@ export function VoiceButton() {
         {isListening ? '🔴 Listening...' : '🎤 Press to Speak'}
       </p>
 
-      {/* Transcript Display */}
+      {/* Transcript Display with Send Button */}
       <AnimatePresence>
         {transcript && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl"
+            className="flex items-center gap-2 w-full max-w-md"
           >
-            <Volume2 className="w-5 h-5 text-primary" />
-            <p className="text-kid text-foreground">{transcript}</p>
+            <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-muted rounded-xl">
+              <Volume2 className="w-5 h-5 text-primary flex-shrink-0" />
+              <p className="text-kid text-foreground flex-1">{transcript}</p>
+            </div>
+            <Button
+              onClick={() => handleSendAction(transcript)}
+              size="icon"
+              className="rounded-xl h-10 w-10"
+            >
+              <Send className="w-5 h-5" />
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>

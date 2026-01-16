@@ -35,13 +35,13 @@ export function CharacterCard() {
           {character.name} the {CLASS_LABELS[character.class]}
         </h2>
         
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-3 mt-1">
           {/* Health */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {Array.from({ length: character.maxHealth }).map((_, i) => (
               <span
                 key={i}
-                className={`text-kid transition-all duration-300 ${
+                className={`text-sm transition-all duration-300 ${
                   i < character.health ? 'heart-beat' : 'opacity-30'
                 }`}
               >
@@ -51,11 +51,11 @@ export function CharacterCard() {
           </div>
           
           {/* Magic */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {Array.from({ length: character.maxMagic }).map((_, i) => (
               <span
                 key={i}
-                className={`text-kid transition-all duration-300 ${
+                className={`text-sm transition-all duration-300 ${
                   i < character.magic ? 'star-shine' : 'opacity-30'
                 }`}
               >

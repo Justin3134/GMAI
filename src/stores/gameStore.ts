@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, Character, CharacterClass, InventoryItem, Achievement, Location, EducationalChallenge, AgentDecision } from '@/types/game';
+import { api } from '@/lib/api';
 
 interface GameStore {
   // Game state
@@ -10,6 +11,12 @@ interface GameStore {
   showChallenge: boolean;
   agentDecisions: AgentDecision[];
   showAgentPanel: boolean;
+  
+  // Backend state
+  backendGameId: string | null;
+  sceneImageUrl: string | null;
+  isLoadingAction: boolean;
+  currentAudioUrl: string | null;
   
   // Voice state
   isListening: boolean;
@@ -35,6 +42,14 @@ interface GameStore {
   addAgentDecision: (decision: AgentDecision) => void;
   clearAgentDecisions: () => void;
   setShowAgentPanel: (show: boolean) => void;
+  
+  // Backend actions
+  setBackendGameId: (id: string) => void;
+  setSceneImageUrl: (url: string | null) => void;
+  setIsLoadingAction: (loading: boolean) => void;
+  setCurrentAudioUrl: (url: string | null) => void;
+  sendActionToBackend: (action: string) => Promise<void>;
+  playAudio: (url: string) => void;
   
   // Voice actions
   setIsListening: (listening: boolean) => void;
@@ -81,10 +96,14 @@ export const useGameStore = create<GameStore>()(
       showChallenge: false,
       agentDecisions: [],
       showAgentPanel: false,
+      backendGameId: null,
+      sceneImageUrl: null,
+      isLoadingAction: false,
+      currentAudioUrl: null,
       isListening: false,
       transcript: '',
       
-      createCharacter: (name, characterClass) => {
+      createCharacter: async (name, characterClass) => {
         const character = createDefaultCharacter(name, characterClass);
         const gameState: GameState = {
           gameId: `game-${Date.now()}`,
@@ -92,11 +111,40 @@ export const useGameStore = create<GameStore>()(
           location: DEFAULT_LOCATIONS[0],
           inventory: [...DEFAULT_ITEMS],
           achievements: [],
-          currentStory: `Welcome, ${name} the ${characterClass}! Your adventure begins in ${DEFAULT_LOCATIONS[0].name}. The villagers need your help to find the legendary Star Crystal before the Shadow King takes it!`,
+          currentStory: 'Starting your adventure...',
           questProgress: 0,
           totalQuests: 5,
         };
         set({ gameState, isPlaying: true });
+
+        // Call backend to start game with AI-generated story
+        try {
+          const response = await api.startGame({
+            kidName: name,
+            characterClass,
+            kidId: name.toLowerCase().replace(/\s+/g, '_'),
+          });
+
+          set({
+            backendGameId: response.gameId,
+            gameState: { ...gameState, currentStory: response.welcomeNarration },
+          });
+
+          // Play welcome audio
+          if (response.audioUrl) {
+            set({ currentAudioUrl: response.audioUrl });
+            get().playAudio(response.audioUrl);
+          }
+        } catch (error) {
+          console.error('Failed to start game:', error);
+          // Fallback to local story
+          set({
+            gameState: {
+              ...gameState,
+              currentStory: `Welcome, ${name} the ${characterClass}! Your adventure begins in ${DEFAULT_LOCATIONS[0].name}. The villagers need your help to find the legendary Star Crystal before the Shadow King takes it!`,
+            },
+          });
+        }
       },
       
       updateHealth: (delta) => {
@@ -211,12 +259,92 @@ export const useGameStore = create<GameStore>()(
       clearAgentDecisions: () => set({ agentDecisions: [] }),
       setShowAgentPanel: (show) => set({ showAgentPanel: show }),
       
+      setBackendGameId: (id) => set({ backendGameId: id }),
+      setSceneImageUrl: (url) => set({ sceneImageUrl: url }),
+      setIsLoadingAction: (loading) => set({ isLoadingAction: loading }),
+      setCurrentAudioUrl: (url) => set({ currentAudioUrl: url }),
+      
+      playAudio: (url: string) => {
+        if (!url) return;
+        const audio = new Audio(url);
+        audio.play().catch((error) => {
+          console.error('Failed to play audio:', error);
+        });
+      },
+      
+      sendActionToBackend: async (action: string) => {
+        const { gameState, backendGameId } = get();
+        if (!gameState || !backendGameId) return;
+
+        set({ isLoadingAction: true });
+        try {
+          const response = await api.sendAction({
+            gameId: backendGameId,
+            kidAction: action,
+            gameState,
+            kidId: gameState.character.name.toLowerCase().replace(/\s+/g, '_'),
+          });
+
+          // Update story text from Anthropic
+          get().updateStory(response.narration);
+
+          // Update scene image from Freepik
+          if (response.imageUrl) {
+            set({ sceneImageUrl: response.imageUrl });
+          }
+
+          // Play audio from ElevenLabs
+          if (response.audioUrl) {
+            set({ currentAudioUrl: response.audioUrl });
+            get().playAudio(response.audioUrl);
+          }
+
+          // Show challenge if generated
+          if (response.challenge) {
+            get().setChallenge(response.challenge);
+            get().setShowChallenge(true);
+          }
+
+          // Log agent decisions to demo panel
+          if (response.agentDecisions) {
+            const agentMap: Record<string, { emoji: string; name: string }> = {
+              story: { emoji: '📖', name: 'Story Agent' },
+              safety: { emoji: '🛡️', name: 'Safety Agent' },
+              rules: { emoji: '⚖️', name: 'Rules Agent' },
+            };
+
+            Object.entries(response.agentDecisions).forEach(([agent, data]: [string, any]) => {
+              const info = agentMap[agent] || { emoji: '🤖', name: agent };
+              get().addAgentDecision({
+                agentName: info.name,
+                agentEmoji: info.emoji,
+                action: data.text ? `Generated: ${data.text.substring(0, 40)}...` : 'Processing',
+                status: 'success',
+                duration: data.time || 0,
+                timestamp: new Date(),
+              });
+            });
+          }
+        } catch (error) {
+          console.error('Failed to send action:', error);
+          get().addAgentDecision({
+            agentName: 'System',
+            agentEmoji: '⚠️',
+            action: 'Failed to connect to backend',
+            status: 'error',
+            timestamp: new Date(),
+          });
+        } finally {
+          set({ isLoadingAction: false });
+        }
+      },
+      
       setIsListening: (listening) => set({ isListening: listening }),
       setTranscript: (transcript) => set({ transcript }),
       
       startNewGame: () => set({ isPlaying: true }),
       continueGame: () => set({ isPlaying: true }),
-      resetGame: () => set({ gameState: null, isPlaying: false, agentDecisions: [] }),
+      resetGame: () => set({ gameState: null, isPlaying: false, agentDecisions: [], backendGameId: null, sceneImageUrl: null, currentAudioUrl: null }),
     }),
     {
       name: 'adventure-tales-game',
