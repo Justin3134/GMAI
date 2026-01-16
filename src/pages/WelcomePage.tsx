@@ -34,7 +34,7 @@ export default function WelcomePage() {
             className="mb-4"
           >
             <h1 className="text-kid-5xl font-display text-gradient-hero text-shadow-hero mb-2">
-              🎭 ADVENTURE TALES
+              ADVENTURE TALES
             </h1>
           </motion.div>
           
@@ -44,7 +44,7 @@ export default function WelcomePage() {
             transition={{ delay: 0.3 }}
             className="text-kid-xl text-card font-semibold text-shadow-game mb-12"
           >
-            Learn While You Play! ✨
+            Learn While You Play!
           </motion.p>
         </motion.div>
 
@@ -93,51 +93,22 @@ export default function WelcomePage() {
             to="/parent"
             className="text-sm text-foreground hover:text-foreground/80 transition-colors underline"
           >
-            👨‍👩‍👧 Parent Dashboard
+            Parent Dashboard
           </Link>
           <Link 
             to="/teacher"
             className="text-sm text-foreground hover:text-foreground/80 transition-colors underline"
           >
-            👩‍🏫 Teacher Dashboard
+            Teacher Dashboard
           </Link>
           <Link 
             to="/agents"
             className="text-sm text-foreground hover:text-foreground/80 transition-colors underline"
           >
-            🤖 Agent Demo
+            Agent Demo
           </Link>
         </motion.div>
 
-        {/* Floating elements */}
-        <motion.div
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="absolute top-20 left-10 text-kid-4xl float"
-        >
-          ⭐
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 4, repeat: Infinity, delay: 1 }}
-          className="absolute top-32 right-16 text-kid-3xl float"
-        >
-          🧙
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
-          className="absolute bottom-32 left-20 text-kid-3xl float"
-        >
-          🗡️
-        </motion.div>
-        <motion.div
-          animate={{ y: [0, -12, 0] }}
-          transition={{ duration: 3.5, repeat: Infinity, delay: 1.5 }}
-          className="absolute bottom-40 right-24 text-kid-3xl float"
-        >
-          📚
-        </motion.div>
       </div>
     </div>
   );
