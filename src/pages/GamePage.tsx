@@ -63,11 +63,11 @@ export default function GamePage() {
       </div>
 
       {/* Fullscreen Story */}
-      <div className="h-screen flex flex-col pt-12 pb-2">
-        <div className="flex-1 min-h-0 mb-2">
+      <div className="h-screen flex flex-col pt-12">
+        <div className="flex-1 min-h-0 pb-32">
           <StoryPanel />
         </div>
-        <div className="flex-shrink-0 bg-background/80 backdrop-blur-sm p-3 rounded-t-2xl">
+        <div className="absolute bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-t border-border p-4">
           <VoiceButton />
         </div>
       </div>

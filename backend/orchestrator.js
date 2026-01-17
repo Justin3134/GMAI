@@ -57,15 +57,24 @@ const detectNpc = (text) => {
     return NPC_KEYWORDS.find((npc) => lower.includes(npc)) || null;
 };
 
-const saveQuestion = (kidId, question, extractedNumber) => {
+const saveQuestion = (kidId, question, expectedAnswer) => {
     const memory = conversationMemory.get(kidId) || {
         questions: [],
         questionCount: 0
     };
     memory.lastQuestion = question;
-    memory.lastExpectedAnswer = extractedNumber;
+    memory.lastExpectedAnswer = expectedAnswer;
     memory.questionCount = (memory.questionCount || 0) + 1;
+    
+    // Store in history to avoid repeats
+    if (!memory.questions) memory.questions = [];
+    memory.questions.push({ question, expectedAnswer, timestamp: Date.now() });
+    if (memory.questions.length > 10) {
+      memory.questions = memory.questions.slice(-10); // Keep last 10
+    }
+    
     conversationMemory.set(kidId, memory);
+    console.log('💾 Memory updated:', { kidId, questionCount: memory.questionCount, lastQ: question.substring(0, 40) });
 };
 
 const getVoiceTypeForCharacter = (characterClass) => {
@@ -166,14 +175,37 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
             narration = `That action isn't possible right now. ${rulesResult.reason} What would you like to try instead?`;
         }
 
-        // Extract any new question from the narration for next turn
-        const questionMatch = narration.match(/(\d+)\s*[\+\-\×\*]\s*(\d+)|how many|what is|total/i);
-        if (questionMatch) {
-            // Try to extract the expected answer from the question
-            const nums = narration.match(/(\d+)/g);
-            if (nums && nums.length >= 2) {
-                const expectedAnswer = parseInt(nums[0]) + parseInt(nums[1]); // Simple assumption
-                saveQuestion(kidId, narration, expectedAnswer);
+    // Extract and save the new question for next turn
+    const questionMatch = narration.match(/says:\s*['"](.*?)['"]/i);
+    if (questionMatch) {
+      const question = questionMatch[1];
+      // Extract numbers from the question
+      const nums = question.match(/(\d+)/g);
+      if (nums && nums.length >= 2) {
+        const num1 = parseInt(nums[0]);
+        const num2 = parseInt(nums[1]);
+        
+        // Detect operation
+        let expectedAnswer = num1 + num2; // Default to addition
+        if (question.includes('lost') || question.includes('left') || question.includes('remain') || question.includes('gave away')) {
+          expectedAnswer = num1 - num2; // Subtraction
+        } else if (question.includes('each') || question.includes('groups') || question.includes('×') || question.includes('times')) {
+          expectedAnswer = num1 * num2; // Multiplication
+        }
+        
+        saveQuestion(kidId, question, expectedAnswer);
+        console.log('💾 Saved question:', { question: question.substring(0, 50), expected: expectedAnswer });
+      }
+    }
+
+        // Track answer correctness for adaptive difficulty
+        let difficulty = gameState.difficulty || 1;
+        if (extractedNumber !== null && memory.lastExpectedAnswer) {
+            const wasCorrect = extractedNumber === memory.lastExpectedAnswer;
+            if (wasCorrect) {
+                difficulty = Math.min(6, difficulty + 0.5); // Increase difficulty
+            } else {
+                difficulty = Math.max(1, difficulty - 0.3); // Decrease difficulty
             }
         }
 
@@ -181,7 +213,10 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
             ...gameState,
             ...(rulesResult.stateChanges || {}),
             lastStory: narration,
-            storyBeat: (gameState.storyBeat || 0) + 1
+            storyBeat: (gameState.storyBeat || 0) + 1,
+            difficulty: difficulty,
+            lastAnswer: extractedNumber,
+            lastWasCorrect: extractedNumber === memory.lastExpectedAnswer
         };
 
         let challenge = null;
@@ -220,12 +255,12 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
         if (engagementScore !== null) {
             await logEngagement(kidId, {
                 engagementScore,
-                emotion: emotionData ? .emotion
+                emotion: emotionData?.emotion
             });
         }
 
         // Determine voice based on character class
-        const characterClass = updatedState.character ? .class || gameState.character ? .class;
+        const characterClass = updatedState.character?.class || gameState.character?.class;
         const voiceType = getVoiceTypeForCharacter(characterClass);
 
         // Generate specialized visual prompt via Visual Agent

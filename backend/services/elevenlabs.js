@@ -12,33 +12,7 @@ const VOICE_IDS = {
     dragon: "pNInz6obpgDQGcFmaJgB", // Adam - deep dragon
     fairy: "EXAVITQu4vr4xnSDxMaL", // Bella - light fairy
     wizard: "ErXwobaYiN019PkySvjV", // Antoni - wise wizard
-    knight: "TxGEqnHWrfWFTfGW9XjX", // Josh - brave knight
-    villager: "21m00Tcm4TlvDq8ikWAM", // Rachel - friendly villager
-    oldwoman: "EXAVITQu4vr4xnSDxMaL", // Bella - old woman
-    merchant: "pNInz6obpgDQGcFmaJgB" // Adam - merchant
-};
-
-const detectCharacterInText = (text) => {
-    const lower = text.toLowerCase();
-
-    // Check for character mentions and dialogue
-    if (lower.includes("dragon says") || lower.includes("dragon asks") || lower.includes("dragon roars")) {
-        return "dragon";
-    }
-    if (lower.includes("wizard says") || lower.includes("wizard asks") || lower.includes("wise wizard")) {
-        return "wizard";
-    }
-    if (lower.includes("fairy says") || lower.includes("fairy asks") || lower.includes("fairy whispers")) {
-        return "fairy";
-    }
-    if (lower.includes("knight says") || lower.includes("knight shouts") || lower.includes("brave knight")) {
-        return "knight";
-    }
-    if (lower.includes("villager says") || lower.includes("villager asks") || lower.includes("old woman")) {
-        return "villager";
-    }
-
-    return "narrator";
+    knight: "TxGEqnHWrfWFTfGW9XjX" // Josh - brave knight
 };
 
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -64,6 +38,28 @@ const setCachedAudio = (text, voiceType, audio) => {
         audio,
         timestamp: Date.now()
     });
+};
+
+const detectCharacterVoice = (text) => {
+    if (!text) return "narrator";
+
+    const lower = text.toLowerCase();
+
+    // Detect character dialogue
+    if (lower.includes("dragon says:") || lower.includes("dragon asks:") || lower.includes("dragon roars:")) {
+        return "dragon";
+    }
+    if (lower.includes("wizard says:") || lower.includes("wizard asks:")) {
+        return "wizard";
+    }
+    if (lower.includes("fairy says:") || lower.includes("fairy asks:") || lower.includes("fairy whispers:")) {
+        return "fairy";
+    }
+    if (lower.includes("knight says:") || lower.includes("knight shouts:")) {
+        return "knight";
+    }
+
+    return "narrator";
 };
 
 const textToSpeech = async (text, voiceType = "narrator") => {
@@ -106,9 +102,9 @@ const textToSpeech = async (text, voiceType = "narrator") => {
             return audio;
         } catch (error) {
             lastError = error;
-            const status = error.response ? .status;
+            const status = error.response?.status;
             if (status === 429) {
-                const retryAfter = Number(error.response ? .headers ? . ["retry-after"]) || 1;
+                const retryAfter = Number(error.response?.headers?. ["retry-after"]) || 1;
                 logWarn("elevenlabs_rate_limited", {
                     attempt,
                     retryAfter
@@ -126,9 +122,19 @@ const textToSpeech = async (text, voiceType = "narrator") => {
     }
 
     logError("elevenlabs_tts_error", {
-        message: lastError ? .message
+        message: lastError?.message
     });
     return null;
+};
+
+const textToSpeechDynamic = async (text) => {
+    if (!text) return null;
+
+    // Detect which character is speaking and use their voice
+    const character = detectCharacterVoice(text);
+    console.log('🎭 Using voice:', character, 'for:', text.substring(0, 60) + '...');
+
+    return await textToSpeech(text, character);
 };
 
 const speechToText = async (audioBlob) => {
@@ -138,7 +144,6 @@ const speechToText = async (audioBlob) => {
         return null;
     }
 
-    // Placeholder: ElevenLabs STT endpoints may vary; keep as backup path.
     try {
         const response = await axios.post("https://api.elevenlabs.io/v1/speech-to-text", audioBlob, {
             headers: {
@@ -147,23 +152,13 @@ const speechToText = async (audioBlob) => {
             },
             timeout: 12000
         });
-        return response.data ? .text || null;
+        return response.data?.text || null;
     } catch (error) {
         logWarn("elevenlabs_stt_failed", {
             message: error.message
         });
         return null;
     }
-};
-
-const textToSpeechDynamic = async (text) => {
-    if (!text) return null;
-
-    // Detect which character is speaking and use their voice
-    const character = detectCharacterInText(text);
-    console.log('🎭 Detected character voice:', character);
-
-    return await textToSpeech(text, character);
 };
 
 module.exports = {

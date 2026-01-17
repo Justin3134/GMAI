@@ -106,10 +106,10 @@ export function StoryPanel() {
         </div>
       </div>
 
-      {/* Story Text Bar - Fixed at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/90 to-transparent backdrop-blur-md px-6 py-4 z-10">
+      {/* Story Text Bar - Above Image */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/90 to-transparent backdrop-blur-md px-6 py-3 z-10 pointer-events-none">
         <div className="max-w-4xl mx-auto">
-          <p className={`text-lg md:text-xl leading-relaxed text-white font-medium ${isTyping ? 'typewriter-cursor' : ''}`}>
+          <p className={`text-base md:text-lg leading-relaxed text-white font-medium ${isTyping ? 'typewriter-cursor' : ''}`}>
             {displayedText}
           </p>
         </div>
