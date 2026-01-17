@@ -53,8 +53,7 @@ const generateSceneImage = async (prompt) => {
 };
 
 const generateSceneVideo = async (prompt, characterClass, storyContext) => {
-    // For now, use images for fast response
-    // Videos take 30-60s which is too slow for interactive gameplay
+    // Use images for fast response
     return await generateSceneImage(prompt);
 };
 

@@ -234,7 +234,7 @@ const processKidAction = async (kidAction, gameState = {}, kidId) => {
 
         // Generate audio with dynamic character voices and image
         const [audioUrl, mediaUrl] = await Promise.all([
-            textToSpeechDynamic(narration),  // Detects character and uses appropriate voice
+            textToSpeechDynamic(narration), // Detects character and uses appropriate voice
             generateSceneVideo(visualPrompt, characterClass, narration)
         ]);
 
